@@ -1,11 +1,14 @@
+import nltk
+nltk.download('punkt')
+nltk.download('punkt_tab')
+nltk.download('stopwords')
+
 import streamlit as st
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 import heapq
-import nltk
-
-nltk.download('punkt')
-nltk.download('stopwords')
+# import shutil  # No longer needed
+# shutil.rmtree('C:/Users/HP/nltk_data', ignore_errors=True)  # Remove this line
 
 def summarize_text(text, max_sentences=3):
     stop_words = set(stopwords.words("english"))
@@ -14,10 +17,7 @@ def summarize_text(text, max_sentences=3):
 
     for word in words:
         if word.lower() not in stop_words and word.isalnum():
-            if word.lower() not in word_frequencies.keys():
-                word_frequencies[word.lower()] = 1
-            else:
-                word_frequencies[word.lower()] += 1
+            word_frequencies[word.lower()] = word_frequencies.get(word.lower(), 0) + 1
 
     sentence_scores = {}
     sentences = sent_tokenize(text)
@@ -26,21 +26,18 @@ def summarize_text(text, max_sentences=3):
         for word in word_tokenize(sent.lower()):
             if word in word_frequencies:
                 if len(sent.split(" ")) < 30:
-                    if sent not in sentence_scores:
-                        sentence_scores[sent] = word_frequencies[word]
-                    else:
-                        sentence_scores[sent] += word_frequencies[word]
+                    sentence_scores[sent] = sentence_scores.get(sent, 0) + word_frequencies[word]
 
     summary_sentences = heapq.nlargest(max_sentences, sentence_scores, key=sentence_scores.get)
     summary = ' '.join(summary_sentences)
     return summary
 
-# Streamlit Interface
+# Streamlit UI
 st.set_page_config(page_title="Text Summarizer", layout="centered")
-st.title("Text Summarizer App")
+st.title("📝 Text Summarizer")
 st.write("Enter any long paragraph or article to get a short summary.")
 
-text_input = st.text_area("Paste your text here...", height=250)
+text_input = st.text_area("Paste your text here:", height=250)
 max_sentences = st.slider("Select number of sentences for summary", 1, 10, 3)
 
 if st.button("Summarize"):
@@ -49,4 +46,4 @@ if st.button("Summarize"):
         st.subheader("Summary:")
         st.success(summary)
     else:
-        st.warning("Please paste some text to summarize.")
+        st.warning("Please enter text to summarize.")
